@@ -52,7 +52,7 @@ pipeline {
             steps {
                 sshagent(['ec2-key']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@<EC2_PUBLIC_IP> "
+                    ssh -o StrictHostKeyChecking=no ubuntu@52.66.241.34 "
                         sudo docker pull ${ECR_REPO}:latest &&
                         sudo docker rm -f app || true &&
                         sudo docker run -d -p 5000:5000 --name app ${ECR_REPO}:latest
@@ -61,3 +61,14 @@ pipeline {
                 }
             }
         }
+    }
+
+    post {
+        success {
+            echo "✔ Deployment successful!"
+        }
+        failure {
+            echo "✖ Deployment failed. Check logs."
+        }
+    }
+}
