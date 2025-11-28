@@ -11,7 +11,8 @@ pipeline {
 
         stage('Clone Code') {
             steps {
-                git 'https://github.com/Ezioraz/devops-cicd-demo.git'
+                git branch: 'main',
+                    url: 'https://github.com/Ezioraz/devops-cicd-demo.git'
             }
         }
 
@@ -25,12 +26,12 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     sh '''
-                    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                    aws configure set default.region ${AWS_REGION}
+                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                        aws configure set default.region ${AWS_REGION}
 
-                    aws ecr get-login-password --region ${AWS_REGION} \
-                    | docker login --username AWS --password-stdin ${ECR_REPO}
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                        | docker login --username AWS --password-stdin ${ECR_REPO}
                     '''
                 }
             }
@@ -52,11 +53,11 @@ pipeline {
             steps {
                 sshagent(['ec2-key']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ubuntu@52.66.241.34 "
-                        sudo docker pull ${ECR_REPO}:latest &&
-                        sudo docker rm -f app || true &&
-                        sudo docker run -d -p 5000:5000 --name app ${ECR_REPO}:latest
-                    "
+                        ssh -o StrictHostKeyChecking=no ubuntu@52.66.241.34 "
+                            sudo docker pull ${ECR_REPO}:latest &&
+                            sudo docker rm -f app || true &&
+                            sudo docker run -d -p 5000:5000 --name app ${ECR_REPO}:latest
+                        "
                     '''
                 }
             }
