@@ -22,9 +22,15 @@ pipeline {
             }
         }
 
-        stage('AWS ECR Login') {
+        stage('AWS ECR Login (Jenkins)') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-creds',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
                     sh '''
                         aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
                         aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
@@ -54,8 +60,20 @@ pipeline {
                 sshagent(['ec2-key']) {
                     sh '''
                         ssh -o StrictHostKeyChecking=no ubuntu@52.66.241.34 "
-                            sudo docker pull ${ECR_REPO}:latest &&
-                            sudo docker rm -f app || true &&
+                            # Configure AWS credentials on EC2
+                            aws configure set default.region ${AWS_REGION}
+
+                            # Login EC2 into ECR
+                            aws ecr get-login-password --region ${AWS_REGION} \
+                            | sudo docker login --username AWS --password-stdin ${ECR_REPO}
+
+                            # Pull latest image
+                            sudo docker pull ${ECR_REPO}:latest
+
+                            # Remove old container if running
+                            sudo docker rm -f app || true
+
+                            # Run new container
                             sudo docker run -d -p 5000:5000 --name app ${ECR_REPO}:latest
                         "
                     '''
